@@ -14,12 +14,12 @@ A real-time communication server using WebSockets. Clients can connect via a web
 
 ## Implementation Plan
 
-1. A single room with no auth
+1. ~~A single room with no auth~~
     1. ~~Accepts connections~~
     2. ~~Clients can send in messages, server broadcasts them~~
     3. ~~Connect/Disconnect messages~~
     4. ~~Client tracking~~
-	5. Usernames
+	5. ~~Usernames~~
 2. Authentication
     1. `/api/v1/room/join` endpoint
     2. Random code generation

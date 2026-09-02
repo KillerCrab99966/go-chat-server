@@ -14,20 +14,6 @@ import (
 
 var clientCount = 0
 
-type client struct {
-	conn *websocket.Conn
-	id   int
-	send chan []byte
-}
-
-func newClient(c *websocket.Conn, id int) *client {
-	return &client{
-		conn: c,
-		id:   id,
-		send: make(chan []byte, 256),
-	}
-}
-
 type hub struct {
 	mu      sync.RWMutex
 	clients map[*client]struct{}
@@ -61,9 +47,9 @@ func (h *hub) broadcast(sender *client, msg []byte) {
 	var formatted []byte
 	if sender == nil {
 		// Server message; no sender
-		formatted = fmt.Appendf(nil, "[] %v", string(msg))
+		formatted = fmt.Appendf(nil, "%v", string(msg))
 	} else {
-		formatted = fmt.Appendf(nil, "[%d] %v", sender.id, string(msg))
+		formatted = fmt.Appendf(nil, "[%s] %v", sender.username, string(msg))
 	}
 
 	for client := range h.clients {
@@ -78,7 +64,7 @@ func (h *hub) broadcast(sender *client, msg []byte) {
 		case client.send <- formatted:
 		default:
 			// Buffer full
-			fmt.Printf("Client %d buffer full, dropping message\n", client.id)
+			fmt.Printf("%s buffer full, dropping message\n", client.username)
 		}
 	}
 }
@@ -90,7 +76,13 @@ func (h *hub) wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.CloseNow()
 
-	cl := newClient(c, clientCount)
+	// Avoid username conflicts
+	rawUsername := r.URL.Query().Get("username")
+	if rawUsername == "" {
+		rawUsername = "User"
+	}
+
+	cl := newClient(c, clientCount, randomiseUsername(rawUsername))
 	clientCount++
 
 	h.add(cl)
@@ -98,7 +90,7 @@ func (h *hub) wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	go monitorMsgs(cl)
 
-	msg := fmt.Sprintf("Client %d connected", cl.id)
+	msg := fmt.Sprintf("%s connected", cl.username)
 	fmt.Printf("%s\n", msg)
 	h.broadcast(nil, []byte(msg))
 
@@ -111,7 +103,7 @@ func (h *hub) wsHandler(w http.ResponseWriter, r *http.Request) {
 				websocket.CloseStatus(err) == websocket.StatusGoingAway ||
 				errors.Is(err, io.EOF) {
 
-				msg := fmt.Sprintf("Client %d disconnected", cl.id)
+				msg := fmt.Sprintf("%s disconnected", cl.username)
 				fmt.Printf("%s\n", msg)
 				h.broadcast(nil, []byte(msg))
 
@@ -121,7 +113,7 @@ func (h *hub) wsHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 		}
 
-		fmt.Printf("[%d] %v\n", cl.id, string(msg))
+		fmt.Printf("[%s] %v\n", cl.username, string(msg))
 		h.broadcast(cl, msg)
 	}
 }

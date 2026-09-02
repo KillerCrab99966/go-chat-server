@@ -23,7 +23,11 @@ A real-time communication server using WebSockets. Clients can connect via a web
 2. Authentication
     1. `/api/v1/room/join` endpoint
     2. Random code generation
+		- [EEF Short Wordlist](https://www.eff.org/files/2016/09/08/eff_short_wordlist_1.txt)
+		- Use 3 words for ~2.176 billion combinations
     3. Single-use token generation and validation
+		- Use `crypto/rand`
+	4. Send JSON instead of plain text
 3. Message storage
     1. Store sent messages in an embedded database e.g. BadgerDB
     2. Send last chunk (e.g. 100 msgs) to clients on connect and more on request
@@ -90,7 +94,8 @@ Create a new room (if allowed by server configuration)
 
 - `name?`: The desired name of the room
     - **Default:** `Room123456`
-    - If already taken the server returns an error `NameUnavailable`
+    - Rooms are stored via there codes, meaning there will not be naming conflicts
+	- If a generated code is already in use, it is regenerated
 
 #### Successful Response
 

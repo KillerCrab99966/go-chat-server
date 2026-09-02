@@ -15,7 +15,7 @@ A real-time communication server using WebSockets. Clients can connect via a web
 ## Implementation Plan
 
 1. A single room with no auth
-    1. Accepts connections
+    1. ~~Accepts connections~~
     2. Clients can send in messages, server broadcasts them
     3. Connect/Disconnect messages
     4. Client tracking

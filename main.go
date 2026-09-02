@@ -8,15 +8,17 @@ import (
 )
 
 func main() {
-	m := initRoutes()
+	h := newHub()
+
+	m := initRoutes(h)
 
 	startServer(m)
 }
 
-func initRoutes() *http.ServeMux {
+func initRoutes(h *hub) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/ws", wsHandler)
+	mux.HandleFunc("/ws", h.wsHandler)
 
 	return mux
 }

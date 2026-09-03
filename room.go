@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"sync"
 )
 
 type room struct {
 	mu      sync.RWMutex
+	name    string
 	clients map[*client]struct{}
+	code    string
 }
 
 func (rm *room) add(c *client) {
@@ -49,13 +52,20 @@ func (rm *room) broadcast(sender *client, msg []byte) {
 		case client.send <- formatted:
 		default:
 			// Buffer full
-			fmt.Printf("%s buffer full, dropping message\n", client.username)
+			log.Printf("%s buffer full, dropping message\n", client.username)
 		}
 	}
 }
 
-func newRoom() *room {
-	return &room{
-		clients: make(map[*client]struct{}),
+func newRoom(name string, gen *codeGenerator) (*room, error) {
+	code, err := gen.generateCode()
+	if err != nil {
+		return nil, fmt.Errorf("generating code: %w", err)
 	}
+
+	return &room{
+		name:    name,
+		clients: make(map[*client]struct{}),
+		code:    code,
+	}, nil
 }

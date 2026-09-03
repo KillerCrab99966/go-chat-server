@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/coder/websocket"
@@ -32,8 +33,8 @@ func (rm *room) wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	go monitorMsgs(cl)
 
-	msg := fmt.Sprintf("%s connected", cl.username)
-	fmt.Printf("%s\n", msg)
+	msg := fmt.Sprintf("%s connected to %s", cl.username, rm.name)
+	log.Printf("%s\n", msg)
 	rm.broadcast(nil, []byte(msg))
 
 	ctx := r.Context()
@@ -45,8 +46,8 @@ func (rm *room) wsHandler(w http.ResponseWriter, r *http.Request) {
 				websocket.CloseStatus(err) == websocket.StatusGoingAway ||
 				errors.Is(err, io.EOF) {
 
-				msg := fmt.Sprintf("%s disconnected", cl.username)
-				fmt.Printf("%s\n", msg)
+				msg := fmt.Sprintf("%s disconnected from %s", cl.username, rm.name)
+				log.Printf("%s\n", msg)
 				rm.broadcast(nil, []byte(msg))
 
 				return
@@ -55,7 +56,7 @@ func (rm *room) wsHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 		}
 
-		fmt.Printf("[%s] %v\n", cl.username, string(msg))
+		log.Printf("[%s] %v\n", cl.username, string(msg))
 		rm.broadcast(cl, msg)
 	}
 }

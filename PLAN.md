@@ -21,19 +21,20 @@ A real-time communication server using WebSockets. Clients can connect via a web
     4. ~~Client tracking~~
 	5. ~~Usernames~~
 2. Authentication
-    1. `/api/v1/room/join` endpoint
-    2. Random code generation
+    1. ~~Random code generation~~
 		- [EEF Short Wordlist](https://www.eff.org/files/2016/09/08/eff_short_wordlist_1.txt)
-		- Use 3 words for ~2.176 billion combinations
-    3. Single-use token generation and validation
+		- Use 4 words for ~2.8 trillion combinations
+    2. ~~`/api/room/join` endpoint~~
+    3. ~~Single-use token generation and validation~~
 		- Use `crypto/rand`
 	4. Send JSON instead of plain text
-3. Message storage
+	5. Rate-limiting/Token-stealing
+3. Multiple rooms
+    1. `/api/room/create` endpoint
+4. Message storage
     1. Store sent messages in an embedded database e.g. BadgerDB
     2. Send last chunk (e.g. 100 msgs) to clients on connect and more on request
     3. Remove with room
-4. Multiple rooms
-    1. `/api/v1/room/create` endpoint
 5. User Interfaces
     1. Terminal
     2. Web
@@ -59,25 +60,24 @@ WebSocket connections and communications
 
 #### Params
 
-- `token`: The one-time token from `/api/v1/room/join`
+- `token`: The one-time token from `/api/room/join`
 - `username?`: Displayed name for client — will get a random 4-digit number added to avoid conflicts
     - **Default:** `User`
     - E.g. `Eric` → `Eric1234`
 
-### `POST /api/v1/room/join`
+### `POST /api/room/join`
 
 Join a room
 
 #### Body
 
-- `room`: The ID/name of the room
 - `code`: The auth code for the room
 
 #### Successful Response
 
 ```jsonc
 {
-    // Same as sent; verification
+    // Name of room associated with code
     "room": "",
 
     // A one-time token used to connect to the room.
@@ -86,7 +86,17 @@ Join a room
 }
 ```
 
-### `GET /api/v1/room/create`
+#### Token (OTP)
+
+- A 6-digit pseudo-random number
+- 30s TTL
+- **Associated metadata**
+	- Room code (used as the ID of the room)
+	- Connecting IP (to avoid token-stealing)
+
+As soon as the client sends a request to `/ws`, the token is invalidated, before the connection is upgraded.
+
+### `GET /api/room/create`
 
 Create a new room (if allowed by server configuration)
 

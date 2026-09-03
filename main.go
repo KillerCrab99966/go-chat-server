@@ -1,29 +1,27 @@
 package main
 
 import (
-	"fmt"
+	_ "embed"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
-func main() {
-	h := newHub()
+//go:embed short-wordlist.txt
+var wordlist string
 
 func main() {
-	rm := newRoom()
+	gen := newCodeGenerator(strings.Split(wordlist, "\n"), 4)
 
-	m := initRoutes(rm)
+	rm, err := newRoom("Room1", gen)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, m := newApp(6, time.Second*30, rm)
 
 	startServer(m)
-}
-
-func initRoutes(rm *room) *http.ServeMux {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/ws", rm.wsHandler)
-
-	return mux
 }
 
 func startServer(mux *http.ServeMux) {
@@ -34,6 +32,6 @@ func startServer(mux *http.ServeMux) {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	fmt.Println("Server listening on", server.Addr)
+	log.Println("Server listening on", server.Addr)
 	log.Fatal(server.ListenAndServe())
 }
